@@ -1,0 +1,63 @@
+{% extends "risk_app/base_app.html" %}
+
+{% block content %}
+<h1 class="page-title">Patient Records</h1>
+<div class="breadcrumb"><a href="{% url 'risk_app:dashboard' %}">Dashboard</a> / Patients</div>
+
+<div class="search-bar">
+    <form method="get" style="flex:1; display:flex; gap:10px;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by name or patient ID...">
+        <button type="submit" class="btn-secondary">Search</button>
+    </form>
+    <a href="{% url 'risk_app:patient_register' %}" class="btn-primary" style="text-decoration:none; display:inline-flex; align-items:center;">+ Register Patient</a>
+    <a href="{% url 'risk_app:export_patients_csv' %}" class="btn-secondary">Export CSV</a>
+</div>
+
+<div class="panel">
+    <table class="pred-table">
+        <tr>
+            <th>Patient</th>
+            <th>Phone</th>
+            <th>Registered</th>
+            <th>Latest Risk</th>
+            <th>Total Predictions</th>
+            <th></th>
+        </tr>
+        {% for row in rows %}
+        <tr>
+            <td>
+                <span class="pred-avatar" style="background:
+                    {% if row.latest.risk_level == 'Low' %}var(--low)
+                    {% elif row.latest.risk_level == 'Medium' %}var(--medium)
+                    {% elif row.latest.risk_level == 'High' %}var(--high)
+                    {% else %}var(--text-dim){% endif %};">
+                    {{ row.patient.full_name|slice:":1"|upper }}
+                </span>
+                {{ row.patient.full_name }}
+                <div class="placeholder" style="margin:0;">{{ row.patient.patient_id }}</div>
+            </td>
+            <td>{{ row.patient.phone_number|default:"—" }}</td>
+            <td>{{ row.patient.date_registered|date:"d M Y" }}</td>
+            <td>
+                {% if row.latest %}
+                <span class="risk-pill" style="background:
+                    {% if row.latest.risk_level == 'Low' %}var(--low-bg); color:var(--low)
+                    {% elif row.latest.risk_level == 'Medium' %}var(--medium-bg); color:var(--medium)
+                    {% else %}var(--high-bg); color:var(--high){% endif %};">
+                    {{ row.latest.risk_level }}
+                </span>
+                {% else %}
+                <span class="placeholder">No predictions yet</span>
+                {% endif %}
+            </td>
+            <td>{{ row.patient.predictions.count }}</td>
+            <td><a href="{% url 'risk_app:patient_detail' row.patient.pk %}" class="btn-secondary">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="placeholder">
+            {% if query %}No patients match "{{ query }}".{% else %}No patients registered yet.{% endif %}
+        </td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

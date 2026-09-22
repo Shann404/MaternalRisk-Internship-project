@@ -1,0 +1,42 @@
+{% extends "risk_app/base_app.html" %}
+
+{% block content %}
+<h1 class="page-title">High-Risk Alerts</h1>
+<div class="breadcrumb"><a href="{% url 'risk_app:dashboard' %}">Dashboard</a> / Alerts</div>
+
+<div class="panel model-note" style="margin-bottom:22px;">
+    Patients listed here have <strong>High</strong> as their most recent risk prediction. This list is meant to help
+    prioritise follow-up &mdash; always confirm with clinical judgement before acting on it.
+</div>
+
+<div class="panel">
+    {% if flagged %}
+    <table class="pred-table">
+        <tr>
+            <th>Patient</th>
+            <th>Phone</th>
+            <th>Flagged On</th>
+            <th>Confidence</th>
+            <th></th>
+        </tr>
+        {% for patient, latest in flagged %}
+        <tr>
+            <td>
+                <span class="pred-avatar" style="background:var(--high);">{{ patient.full_name|slice:":1"|upper }}</span>
+                {{ patient.full_name }}
+                <div class="placeholder" style="margin:0;">{{ patient.patient_id }}</div>
+            </td>
+            <td>{{ patient.phone_number|default:"—" }}</td>
+            <td>{{ latest.created_at|timesince }} ago</td>
+            <td>{{ latest.prob_high }}%</td>
+            <td><a href="{% url 'risk_app:patient_detail' patient.pk %}" class="btn-secondary">View Patient</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <div class="empty-state">
+        No patients are currently flagged High risk. New high-risk predictions will appear here automatically.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

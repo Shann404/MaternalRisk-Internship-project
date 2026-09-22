@@ -1,0 +1,20 @@
+{% extends "risk_app/base_app.html" %}
+
+{% block content %}
+<h1 class="page-title">Register Patient</h1>
+<div class="breadcrumb"><a href="{% url 'risk_app:patients_list' %}">Patients</a> / Register</div>
+
+<div class="panel" style="max-width:480px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="field" style="margin-bottom:16px;">
+            {{ form.full_name.label_tag }}{{ form.full_name }}
+            {% for error in form.full_name.errors %}<div class="auth-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+            {{ form.phone_number.label_tag }}{{ form.phone_number }}
+        </div>
+        <button type="submit" class="btn-primary">Register Patient</button>
+    </form>
+</div>
+{% endblock %}

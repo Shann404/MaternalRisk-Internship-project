@@ -1,0 +1,137 @@
+{% extends "risk_app/base_app.html" %}
+
+{% block content %}
+<h1 class="page-title">Predict Risk Level</h1>
+<div class="breadcrumb">Dashboard / Predict</div>
+
+<div class="grid">
+
+    <div class="panel form-panel">
+        <h2>Patient Details</h2>
+        <form method="post">
+            {% csrf_token %}
+
+            <fieldset>
+                <legend>Patient Record</legend>
+                <div class="form-grid">
+                    <div class="field field-full">
+                        {{ form.patient.label_tag }}{{ form.patient }}
+                        <div class="placeholder" style="margin-top:6px;">
+                            Don't see them listed? <a href="{% url 'risk_app:patient_register' %}">Register a new patient</a> first, or leave this as "Walk-in" for a one-off prediction that won't be saved to a patient's history.
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Demographics</legend>
+                <div class="form-grid">
+                    <div class="field">{{ form.age.label_tag }}{{ form.age }}</div>
+                    <div class="field">{{ form.education_level.label_tag }}{{ form.education_level }}</div>
+                    <div class="field">{{ form.distance_to_facility_km.label_tag }}{{ form.distance_to_facility_km }}</div>
+                    <div class="field">{{ form.substance_use.label_tag }}{{ form.substance_use }}</div>
+                    <div class="field">{{ form.socioeconomic_index.label_tag }}{{ form.socioeconomic_index }}</div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Obstetric History</legend>
+                <div class="form-grid">
+                    <div class="field">{{ form.gravida.label_tag }}{{ form.gravida }}</div>
+                    <div class="field">{{ form.parity.label_tag }}{{ form.parity }}</div>
+                    <div class="field">{{ form.previous_c_section.label_tag }}{{ form.previous_c_section }}</div>
+                    <div class="field">{{ form.previous_stillbirth_miscarriage.label_tag }}{{ form.previous_stillbirth_miscarriage }}</div>
+                    <div class="field field-full">{{ form.interval_since_last_pregnancy_months.label_tag }}{{ form.interval_since_last_pregnancy_months }}</div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Current Pregnancy</legend>
+                <div class="form-grid">
+                    <div class="field">{{ form.gestational_age_weeks.label_tag }}{{ form.gestational_age_weeks }}</div>
+                    <div class="field">{{ form.anc_visits_count.label_tag }}{{ form.anc_visits_count }}</div>
+                    <div class="field">{{ form.first_anc_visit_week.label_tag }}{{ form.first_anc_visit_week }}</div>
+                    <div class="field">{{ form.multiple_gestation.label_tag }}{{ form.multiple_gestation }}</div>
+                    <div class="field field-full">{{ form.fetal_presentation.label_tag }}{{ form.fetal_presentation }}</div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Vitals</legend>
+                <div class="form-grid">
+                    <div class="field">{{ form.bmi.label_tag }}{{ form.bmi }}</div>
+                    <div class="field">{{ form.weight_kg.label_tag }}{{ form.weight_kg }}</div>
+                    <div class="field">{{ form.prepregnancy_weight_kg.label_tag }}{{ form.prepregnancy_weight_kg }}</div>
+                    <div class="field">{{ form.pulse.label_tag }}{{ form.pulse }}</div>
+                    <div class="field">{{ form.systolic.label_tag }}{{ form.systolic }}</div>
+                    <div class="field">{{ form.diastolic.label_tag }}{{ form.diastolic }}</div>
+                    <div class="field">{{ form.fundal_height_cm.label_tag }}{{ form.fundal_height_cm }}</div>
+                    <div class="field">{{ form.fetal_heart_rate_bpm.label_tag }}{{ form.fetal_heart_rate_bpm }}</div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Labs &amp; Conditions</legend>
+                <div class="form-grid">
+                    <div class="field">{{ form.hemoglobin_g_dl.label_tag }}{{ form.hemoglobin_g_dl }}</div>
+                    <div class="field">{{ form.anaemia_severity.label_tag }}{{ form.anaemia_severity }}</div>
+                    <div class="field">{{ form.blood_glucose_mg_dl.label_tag }}{{ form.blood_glucose_mg_dl }}</div>
+                    <div class="field">{{ form.diabetes_severity.label_tag }}{{ form.diabetes_severity }}</div>
+                    <div class="field">{{ form.urine_protein.label_tag }}{{ form.urine_protein }}</div>
+                    <div class="field">{{ form.eclampsia_severity.label_tag }}{{ form.eclampsia_severity }}</div>
+                    <div class="field">{{ form.haemorrhage_severity.label_tag }}{{ form.haemorrhage_severity }}</div>
+                    <div class="field">{{ form.uti_severity.label_tag }}{{ form.uti_severity }}</div>
+                    <div class="field">{{ form.liver_disorder_severity.label_tag }}{{ form.liver_disorder_severity }}</div>
+                    <div class="field">{{ form.blood_group.label_tag }}{{ form.blood_group }}</div>
+                    <div class="field">{{ form.rh_factor.label_tag }}{{ form.rh_factor }}</div>
+                    <div class="field">{{ form.hiv_status.label_tag }}{{ form.hiv_status }}</div>
+                    <div class="field">{{ form.syphilis_status.label_tag }}{{ form.syphilis_status }}</div>
+                    <div class="field">{{ form.vomiting.label_tag }}{{ form.vomiting }}</div>
+                </div>
+            </fieldset>
+
+            <button type="submit" class="btn-primary">Predict Risk Level</button>
+        </form>
+    </div>
+
+    <div class="panel result-panel">
+        <h2>Prediction</h2>
+        {% if result %}
+            <div class="risk-badge" style="background:{{ result.color }}22; color:{{ result.color }}; border:1px solid {{ result.color }};">
+                {{ result.risk_level }} Risk
+            </div>
+            <div>
+                {% for p in result.probabilities %}
+                <div class="prob-row">
+                    <div class="prob-label">{{ p.label }}</div>
+                    <div class="prob-bar-track">
+                        <div class="prob-bar-fill" style="width:{{ p.pct }}%; background:
+                            {% if p.label == 'Low' %}var(--low)
+                            {% elif p.label == 'Medium' %}var(--medium)
+                            {% else %}var(--high){% endif %};"></div>
+                    </div>
+                    <div class="prob-pct">{{ p.pct }}%</div>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="placeholder" style="margin-top:18px;">
+                This is a model estimate based on the entered values &mdash; it supports, but does not replace,
+                clinical judgement. A High or Medium result should prompt closer follow-up.
+            </p>
+        {% else %}
+            <p class="placeholder">Fill in the patient details and click "Predict Risk Level" to see the result here.</p>
+        {% endif %}
+
+        <div class="model-note">
+            Active model backend: <strong>{{ model_backend|upper }}</strong>.
+            {% if model_backend == "sklearn" %}
+                No CatBoost model found &mdash; drop your trained <code>model.cbm</code> into
+                <code>risk_app/ml/</code> to switch over automatically.
+            {% else %}
+                Using your CatBoost model from <code>risk_app/ml/model.cbm</code>.
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

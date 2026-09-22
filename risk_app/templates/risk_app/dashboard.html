@@ -1,0 +1,145 @@
+{% extends "risk_app/base_app.html" %}
+{% load static %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+<div class="breadcrumb">Overview</div>
+
+<!-- Top row: stat cards + weekly bar chart, mirroring the Sale/Traffic row -->
+<div class="dash-row">
+    <div class="panel dash-col-main">
+        <h2>Predictions &mdash; Last 7 Days</h2>
+        <div class="bar-chart">
+            {% for bar in daily_bars %}
+            <div class="bar-col">
+                <div class="bar-count">{{ bar.count }}</div>
+                <div class="bar-fill" style="height:{{ bar.height_pct }}%;"></div>
+                <div class="bar-label">{{ bar.label }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="dash-col-side">
+        <div class="panel" style="flex:1;">
+            <div class="stat-label">Total Predictions</div>
+            <div class="stat-value">{{ total }}</div>
+        </div>
+        <div class="panel" style="flex:1;">
+            <div class="stat-label">Predictions Today</div>
+            <div class="stat-value">{{ predictions_today }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Colored risk-level summary cards, mirroring the Users/Conversion/Sessions cards -->
+<div class="dash-row">
+    <div class="stat-card">
+        <div class="stat-label">Registered Patients</div>
+        <div class="stat-value">{{ total_patients }}</div>
+        <div class="placeholder" style="margin-top:6px;"><a href="{% url 'risk_app:patients_list' %}">View all &rarr;</a></div>
+    </div>
+    <div class="side-card high">
+        <div class="side-value">{{ high_risk_patients }}</div>
+        <div class="side-label">Patients currently flagged High risk</div>
+        <div class="placeholder" style="margin-top:6px;"><a href="{% url 'risk_app:alerts' %}">View alerts &rarr;</a></div>
+    </div>
+</div>
+
+<div class="dash-row">
+    <div class="side-card low">
+        <div class="side-value">{{ risk_counts.Low }} ({{ risk_pcts.Low }}%)</div>
+        <div class="side-label">Low Risk Predictions</div>
+    </div>
+    <div class="side-card medium">
+        <div class="side-value">{{ risk_counts.Medium }} ({{ risk_pcts.Medium }}%)</div>
+        <div class="side-label">Medium Risk Predictions</div>
+    </div>
+    <div class="side-card high">
+        <div class="side-value">{{ risk_counts.High }} ({{ risk_pcts.High }}%)</div>
+        <div class="side-label">High Risk Predictions</div>
+    </div>
+</div>
+
+<!-- Recent Predictions table, mirroring the Users table -->
+<div class="panel" style="margin-bottom:22px;">
+    <h2>Recent Predictions</h2>
+    <table class="pred-table">
+        <tr>
+            <th>Patient</th>
+            <th>Age</th>
+            <th>Gestational Age</th>
+            <th>Risk Level</th>
+            <th>Confidence</th>
+            <th>When</th>
+        </tr>
+        {% for rec in recent %}
+        <tr>
+            <td>
+                <span class="pred-avatar" style="background:
+                    {% if rec.risk_level == 'Low' %}var(--low)
+                    {% elif rec.risk_level == 'Medium' %}var(--medium)
+                    {% else %}var(--high){% endif %};">
+                    {% if rec.patient %}{{ rec.patient.full_name|slice:":1"|upper }}{% elif rec.user %}{{ rec.user.username|slice:":1"|upper }}{% else %}D{% endif %}
+                </span>
+                {% if rec.patient %}
+                    <a href="{% url 'risk_app:patient_detail' rec.patient.pk %}">{{ rec.patient.full_name }}</a>
+                {% elif rec.user %}{{ rec.user.username }} <span class="placeholder">(walk-in)</span>
+                {% else %}Demo record{% endif %}
+            </td>
+            <td>{{ rec.age }}</td>
+            <td>{{ rec.gestational_age_weeks }} weeks</td>
+            <td>
+                <span class="risk-pill" style="background:
+                    {% if rec.risk_level == 'Low' %}#3ddc8422; color:#3ddc84
+                    {% elif rec.risk_level == 'Medium' %}#f1c94a22; color:#f1c94a
+                    {% else %}#e0525222; color:#e05252{% endif %};">
+                    {{ rec.risk_level }}
+                </span>
+            </td>
+            <td>
+                {% if rec.risk_level == 'Low' %}{{ rec.prob_low }}%
+                {% elif rec.risk_level == 'Medium' %}{{ rec.prob_medium }}%
+                {% else %}{{ rec.prob_high }}%{% endif %}
+            </td>
+            <td>{{ rec.created_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="placeholder">No predictions yet &mdash; run one from the Predict page.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<!-- Bottom row: risk breakdown bars + top risk factors, mirroring the Traffic section -->
+<div class="grid">
+    <div class="panel" style="flex:1; min-width:320px;">
+        <h2>Risk Level Breakdown</h2>
+        {% for label, pct in risk_pcts.items %}
+        <div class="feature-bar-row">
+            <div class="feature-bar-label">{{ label }}</div>
+            <div class="feature-bar-track">
+                <div class="feature-bar-fill" style="width:{{ pct }}%; background:
+                    {% if label == 'Low' %}var(--low)
+                    {% elif label == 'Medium' %}var(--medium)
+                    {% else %}var(--high){% endif %};"></div>
+            </div>
+            <div class="feature-bar-pct">{{ pct }}%</div>
+        </div>
+        {% endfor %}
+        <div class="model-note">Active model backend: <strong>{{ model_backend|upper }}</strong></div>
+    </div>
+
+    <div class="panel" style="flex:1; min-width:320px;">
+        <h2>Top Risk Factors (model weight)</h2>
+        {% for f in feature_importance %}
+        <div class="feature-bar-row">
+            <div class="feature-bar-label">{{ f.name }}</div>
+            <div class="feature-bar-track">
+                <div class="feature-bar-fill" style="width:{{ f.pct }}%;"></div>
+            </div>
+            <div class="feature-bar-pct">{{ f.pct }}%</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

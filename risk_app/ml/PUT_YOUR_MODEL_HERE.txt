@@ -1,0 +1,41 @@
+DROP YOUR CATBOOST MODEL HERE
+==============================
+
+Save your trained CatBoost model to this exact path:
+
+    risk_app/ml/model.cbm
+
+using, in the notebook/script where you trained it:
+
+    model.save_model("model.cbm")
+
+As soon as that file exists, views.py automatically switches from the
+sklearn fallback model to your CatBoost model -- no other code changes
+needed. It's picked up in views.py like this:
+
+    CBM_PATH = os.path.join(ML_DIR, "model.cbm")
+    if os.path.exists(CBM_PATH):
+        model = CatBoostClassifier()
+        model.load_model(CBM_PATH)
+
+Important: CatBoost needs to know which columns are categorical. The app
+already passes the right column names (severity levels, Blood_Group,
+Fetal_Presentation, all the Yes/No and Positive/Negative fields) as
+cat_features automatically -- but that only works correctly if your
+CatBoost model was ALSO trained with those same columns left as raw
+strings (not one-hot/ordinal encoded), and in the same column order as
+`feature_cols` in model_metadata.joblib. If you train a new CatBoost
+model, train it directly on the labeled (non-encoded) feature columns,
+e.g.:
+
+    from catboost import CatBoostClassifier, Pool
+    cat_features = [c for c in X.columns if X[c].dtype == "object"]
+    train_pool = Pool(X_train, y_train, cat_features=cat_features)
+    model = CatBoostClassifier(loss_function="MultiClass", random_state=42)
+    model.fit(train_pool)
+    model.save_model("model.cbm")
+
+Then copy model.cbm into this folder and restart the server.
+
+Don't forget: `pip install catboost` (it's already listed as optional in
+requirements.txt, commented out by default).

@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Maternal Risk Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="mark">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7V3z"/></svg>
+                </div>
+                <span>MATERNAL RISK</span>
+            </div>
+            <nav>
+                <a href="{% url 'risk_app:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <span class="icon">&#9635;</span> Dashboard
+                </a>
+                <a href="{% url 'risk_app:predict' %}" class="{% if request.resolver_match.url_name == 'predict' %}active{% endif %}">
+                    <span class="icon">&#9673;</span> Predict Risk
+                </a>
+                <div class="nav-section-label">Patients</div>
+                <a href="{% url 'risk_app:patients_list' %}" class="{% if request.resolver_match.url_name == 'patients_list' or request.resolver_match.url_name == 'patient_detail' %}active{% endif %}">
+                    <span class="icon">&#9776;</span> Patient Records
+                </a>
+                <a href="{% url 'risk_app:patient_register' %}" class="{% if request.resolver_match.url_name == 'patient_register' %}active{% endif %}">
+                    <span class="icon">+</span> Register Patient
+                </a>
+                <a href="{% url 'risk_app:alerts' %}" class="{% if request.resolver_match.url_name == 'alerts' %}active{% endif %}">
+                    <span class="icon">&#9888;</span> High-Risk Alerts
+                    {% if high_risk_alert_count %}<span class="badge-count">{{ high_risk_alert_count }}</span>{% endif %}
+                </a>
+                {% if user.is_staff %}
+                <div class="nav-section-label">Administration</div>
+                <a href="/admin/">
+                    <span class="icon">&#9881;</span> Manage Users
+                </a>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Log out ({{ user.username }})</button>
+                </form>
+                {% endif %}
+            </div>
+        </aside>
+
+        <div class="main">
+            <div class="topbar">
+                <input class="search" type="text" placeholder="Search patient, model, metric...">
+                <div class="topbar-right">
+                    <div class="user-chip">
+                        <div class="avatar">{{ user.username|slice:":1"|upper }}</div>
+                        {{ user.username }}
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

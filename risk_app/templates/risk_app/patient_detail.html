@@ -1,0 +1,75 @@
+{% extends "risk_app/base_app.html" %}
+
+{% block content %}
+<h1 class="page-title">{{ patient.full_name }}</h1>
+<div class="breadcrumb">
+    <a href="{% url 'risk_app:dashboard' %}">Dashboard</a> /
+    <a href="{% url 'risk_app:patients_list' %}">Patients</a> / {{ patient.patient_id }}
+</div>
+
+<div class="grid" style="margin-bottom:22px;">
+    <div class="stat-card">
+        <div class="stat-label">Patient ID</div>
+        <div class="stat-value" style="font-size:20px;">{{ patient.patient_id }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Phone Number</div>
+        <div class="stat-value" style="font-size:20px;">{{ patient.phone_number|default:"—" }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Registered</div>
+        <div class="stat-value" style="font-size:20px;">{{ patient.date_registered|date:"d M Y" }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Predictions</div>
+        <div class="stat-value">{{ predictions.count }}</div>
+    </div>
+</div>
+
+<div class="panel" style="margin-bottom:22px;">
+    <a href="{% url 'risk_app:predict' %}?patient={{ patient.pk }}" class="btn-primary" style="text-decoration:none; display:inline-block;">
+        + New Prediction for This Patient
+    </a>
+</div>
+
+<div class="panel">
+    <h2>Risk History</h2>
+    <table class="pred-table">
+        <tr>
+            <th>Date</th>
+            <th>Age</th>
+            <th>Gestational Age</th>
+            <th>Eclampsia Severity</th>
+            <th>Haemorrhage Severity</th>
+            <th>Risk Level</th>
+            <th>Confidence</th>
+        </tr>
+        {% for rec in predictions %}
+        <tr>
+            <td>{{ rec.created_at|date:"d M Y, H:i" }}</td>
+            <td>{{ rec.age }}</td>
+            <td>{{ rec.gestational_age_weeks }} weeks</td>
+            <td>{{ rec.eclampsia_severity }}</td>
+            <td>{{ rec.haemorrhage_severity }}</td>
+            <td>
+                <span class="risk-pill" style="background:
+                    {% if rec.risk_level == 'Low' %}var(--low-bg); color:var(--low)
+                    {% elif rec.risk_level == 'Medium' %}var(--medium-bg); color:var(--medium)
+                    {% else %}var(--high-bg); color:var(--high){% endif %};">
+                    {{ rec.risk_level }}
+                </span>
+            </td>
+            <td>
+                {% if rec.risk_level == 'Low' %}{{ rec.prob_low }}%
+                {% elif rec.risk_level == 'Medium' %}{{ rec.prob_medium }}%
+                {% else %}{{ rec.prob_high }}%{% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="placeholder">
+            No predictions recorded for this patient yet. Use "New Prediction for This Patient" above to add one.
+        </td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

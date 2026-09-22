@@ -1,0 +1,36 @@
+{% extends "risk_app/base_auth.html" %}
+{% block title %}Create your account{% endblock %}
+
+{% block form_content %}
+<h2>Create your account</h2>
+<p class="subtext">Already have one? <a href="{% url 'login' %}">Sign in</a></p>
+
+{% if form.non_field_errors %}
+<div class="auth-error">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% for error in form.username.errors %}<div class="auth-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="field">
+        <label for="{{ form.email.id_for_label }}">Email address</label>
+        {{ form.email }}
+        {% for error in form.email.errors %}<div class="auth-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="field">
+        <label for="{{ form.password1.id_for_label }}">Password</label>
+        {{ form.password1 }}
+        {% for error in form.password1.errors %}<div class="auth-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="field">
+        <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+        {{ form.password2 }}
+        {% for error in form.password2.errors %}<div class="auth-error">{{ error }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn-primary">Create Account</button>
+</form>
+{% endblock %}

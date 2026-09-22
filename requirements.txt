@@ -1,0 +1,8 @@
+Django>=5.0
+joblib
+pandas
+numpy
+scikit-learn
+
+# Optional: only needed if you drop a CatBoost model.cbm into risk_app/ml/
+# catboost
