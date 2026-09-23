@@ -432,29 +432,38 @@ fieldset legend {
 .auth-slide {
     position: absolute;
     inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px;
     opacity: 0;
     transition: opacity 1s ease;
     pointer-events: none;
 }
 .auth-slide.active { opacity: 1; pointer-events: auto; }
 
-.auth-slide .slide-art {
-    width: 84px; height: 84px;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--accent);
-    margin-bottom: 28px;
+.auth-slide img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
 }
-.auth-slide .slide-art svg { width: 40px; height: 40px; }
+
+.auth-slide .slide-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(11,49,66,0.96) 0%, rgba(11,49,66,0.65) 42%, rgba(11,49,66,0.15) 100%);
+}
+
+.auth-slide .slide-text {
+    position: absolute;
+    left: 60px;
+    right: 60px;
+    bottom: 96px;
+    z-index: 2;
+}
 
 .auth-slide h1 { font-size: 32px; line-height: 1.3; margin: 0 0 14px 0; color: #FFFFFF; font-weight: 800; max-width: 440px; }
-.auth-slide p { color: rgba(255,255,255,0.75); font-size: 15px; max-width: 420px; line-height: 1.6; margin: 0; }
+.auth-slide p { color: rgba(255,255,255,0.85); font-size: 15px; max-width: 420px; line-height: 1.6; margin: 0; }
 
 .auth-side .dots {
     position: absolute;
@@ -466,7 +475,7 @@ fieldset legend {
 }
 .auth-side .dot {
     width: 22px; height: 4px; border-radius: 2px;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.35);
     border: none;
     cursor: pointer;
     padding: 0;
@@ -493,15 +502,3 @@ fieldset legend {
 }
 
 @media (max-width: 860px) { .auth-side { display: none; } }
-
-.auth-slide img {
-     width: 100%; 
-     height: 100%; 
-     object-fit: cover; 
-     position: absolute; 
-     inset: 0; 
-    }
-
-.slide-art { 
-    display: none; 
-}
