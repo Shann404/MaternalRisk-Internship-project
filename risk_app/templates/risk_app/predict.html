@@ -122,15 +122,11 @@
             <p class="placeholder">Fill in the patient details and click "Predict Risk Level" to see the result here.</p>
         {% endif %}
 
-        <div class="model-note">
-            Active model backend: <strong>{{ model_backend|upper }}</strong>.
-            {% if model_backend == "sklearn" %}
-                No CatBoost model found &mdash; drop your trained <code>model.cbm</code> into
-                <code>risk_app/ml/</code> to switch over automatically.
-            {% else %}
-                Using your CatBoost model from <code>risk_app/ml/model.cbm</code>.
-            {% endif %}
-        </div>
+       <div class="model-note">
+    Active model: <strong>GRADIENT BOOSTING</strong>.
+    The system uses a trained Gradient Boosting Classifier with
+    the saved preprocessing pipeline to predict maternal risk level.
+</div>
     </div>
 
 </div>

@@ -35,58 +35,72 @@ from .models import PredictionRecord, Patient
 # once you drop in your .cbm file.
 
 ML_DIR = os.path.join(settings.BASE_DIR, "risk_app", "ml")
-CBM_PATH = os.path.join(ML_DIR, "model.cbm")
 
-META = joblib.load(os.path.join(ML_DIR, "model_metadata.joblib"))
-TARGET_ORDER = META["target_order"]  # ["Low", "Medium", "High"]
-CAT_FEATURE_NAMES = (
-    list(META["ordinal_features"].keys())
-    + META["binary_yes_no"]
-    + META["binary_pos_neg"]
-    + META["nominal_features"]
+MODEL_PATH = os.path.join(
+    ML_DIR,
+    "gradient_boosting_model.joblib"
 )
 
-MODEL_BACKEND = None
-CATBOOST_MODEL = None
-SKLEARN_MODEL = None
-PREPROCESSOR = None
+PREPROCESSOR_PATH = os.path.join(
+    ML_DIR,
+    "preprocessor.joblib"
+)
 
-if os.path.exists(CBM_PATH):
-    from catboost import CatBoostClassifier
-    CATBOOST_MODEL = CatBoostClassifier()
-    CATBOOST_MODEL.load_model(CBM_PATH)
-    MODEL_BACKEND = "catboost"
-    print(f"[risk_app] Loaded CatBoost model from {CBM_PATH}")
-else:
-    SKLEARN_MODEL = joblib.load(os.path.join(ML_DIR, "risk_model.joblib"))
-    PREPROCESSOR = joblib.load(os.path.join(ML_DIR, "preprocessor.joblib"))
-    MODEL_BACKEND = "sklearn"
-    print("[risk_app] No risk_app/ml/model.cbm found -- using the sklearn fallback model. "
-          "Drop your trained CatBoost model in as risk_app/ml/model.cbm to switch over.")
+META_PATH = os.path.join(
+    ML_DIR,
+    "model_metadata.joblib"
+)
+
+# Load metadata
+META = joblib.load(META_PATH)
+
+TARGET_ORDER = META["target_order"]
+# ["Low", "Medium", "High"]
+
+# Load Gradient Boosting model
+SKLEARN_MODEL = joblib.load(MODEL_PATH)
+
+# Load fitted preprocessing pipeline
+PREPROCESSOR = joblib.load(PREPROCESSOR_PATH)
+
+MODEL_BACKEND = "sklearn"
+
+print(f"[risk_app] Loaded Gradient Boosting model from {MODEL_PATH}")
+print(f"[risk_app] Loaded preprocessor from {PREPROCESSOR_PATH}")
+
+
 
 RISK_COLORS = {"Low": "#3ddc84", "Medium": "#f1c94a", "High": "#e05252"}
 
 
 def get_feature_importance_list(top_n=8):
-    """Returns [{"name": ..., "pct": ...}, ...] for the dashboard's ranked list,
-    normalized to sum to 100 across the top_n features shown."""
-    if MODEL_BACKEND == "catboost":
-        names = CATBOOST_MODEL.feature_names_
-        importances = CATBOOST_MODEL.get_feature_importance()
-    else:
-        names = PREPROCESSOR.get_feature_names_out()
-        names = [n.split("__")[-1] for n in names]
-        importances = SKLEARN_MODEL.feature_importances_
+    """
+    Returns the top features used by the Gradient Boosting model.
+    """
 
-    pairs = sorted(zip(names, importances), key=lambda x: -x[1])[:top_n]
+    names = PREPROCESSOR.get_feature_names_out()
+    names = [n.split("__")[-1] for n in names]
+
+    importances = SKLEARN_MODEL.feature_importances_
+
+    pairs = sorted(
+        zip(names, importances),
+        key=lambda x: -x[1]
+    )[:top_n]
+
     total = sum(v for _, v in pairs) or 1
+
     return [
-        {"name": n.replace("_", " "), "pct": round(v / total * 100, 1)}
+        {
+            "name": n.replace("_", " "),
+            "pct": round(v / total * 100, 1)
+        }
         for n, v in pairs
     ]
 
 
 FEATURE_IMPORTANCE_LIST = get_feature_importance_list()
+
 
 
 def build_feature_row(form):
@@ -137,28 +151,62 @@ def build_feature_row(form):
     return pd.DataFrame([row])[META["feature_cols"]]
 
 
-def run_prediction(X_raw):
-    """Runs the active backend (CatBoost .cbm if present, else sklearn) and
-    returns (risk_level, [{"label": ..., "pct": ...}, ...])."""
-    if MODEL_BACKEND == "catboost":
-        from catboost import Pool
-        pool = Pool(X_raw, cat_features=CAT_FEATURE_NAMES)
-        pred_idx = int(CATBOOST_MODEL.predict(pool)[0])
-        probs = CATBOOST_MODEL.predict_proba(pool)[0]
-    else:
-        X = X_raw.copy()
-        for c in META["binary_yes_no"]:
-            X[c] = (X[c] == "Yes").astype(int)
-        for c in META["binary_pos_neg"]:
-            X[c] = X[c].isin(["Positive"]).astype(int)
-        X_proc = PREPROCESSOR.transform(X)
-        pred_idx = int(SKLEARN_MODEL.predict(X_proc)[0])
-        probs = SKLEARN_MODEL.predict_proba(X_proc)[0]
+def run_prediction(patient_df):
+    """
+    Run the trained Gradient Boosting model on a single patient row.
+    patient_df must already be a 2-D pandas DataFrame.
+    """
 
-    risk_level = TARGET_ORDER[pred_idx]
-    probabilities = [{"label": label, "pct": round(p * 100, 1)} for label, p in zip(TARGET_ORDER, probs)]
+    # Make sure the columns are in exactly the same order
+    # used when the model was trained.
+    feature_cols = META["feature_cols"]
+    patient_df = patient_df.reindex(columns=feature_cols).copy()
+
+    # Match the binary conversions used during model training
+    binary_yes_no = [
+        "Previous_C_Section",
+        "Previous_Stillbirth_Miscarriage",
+        "Multiple_Gestation",
+        "Substance_Use",
+        "Vomiting",
+    ]
+
+    for c in binary_yes_no:
+        if c in patient_df.columns:
+            patient_df[c] = (patient_df[c] == "Yes").astype(int)
+
+    binary_pos_neg = [
+        "HIV_Status",
+        "Syphilis_Status",
+        "Rh_Factor",
+    ]
+
+    for c in binary_pos_neg:
+        if c in patient_df.columns:
+            patient_df[c] = (patient_df[c] == "Positive").astype(int)
+
+    # Apply the fitted preprocessing used during training
+    X_processed = PREPROCESSOR.transform(patient_df)
+
+    # Generate prediction
+    prediction = SKLEARN_MODEL.predict(X_processed)[0]
+
+    # Generate class probabilities
+    probabilities_raw = SKLEARN_MODEL.predict_proba(X_processed)[0]
+
+    # Convert numeric prediction back to Low / Medium / High
+    risk_level = TARGET_ORDER[int(prediction)]
+
+    # Format probabilities for the template and database
+    probabilities = [
+        {
+            "label": TARGET_ORDER[i],
+            "pct": round(float(probabilities_raw[i]) * 100, 2),
+        }
+        for i in range(len(TARGET_ORDER))
+    ]
+
     return risk_level, probabilities
-
 
 @login_required
 def predict_view(request):
