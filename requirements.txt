@@ -1,8 +1,9 @@
-Django>=5.0
-joblib
+Django==5.0.7
+gunicorn
+whitenoise
 pandas
 numpy
-scikit-learn
+scikit-learn==1.6.1
+joblib
 
-# Optional: only needed if you drop a CatBoost model.cbm into risk_app/ml/
-# catboost
+
